@@ -4,7 +4,7 @@ The system features an advanced retrieval pipeline that combines semantic and ke
 
 ## Key Features
 
--   **Advanced PDF Ingestion**: Uses Google's Gemini Pro model to extract structured text, tables, and image descriptions from PDFs, preserving the original layout.
+-   **Advanced PDF Ingestion**: Uses Google's Gemini model (API) to extract structured text, tables, and image descriptions from PDFs, preserving the original layout.
 -   **Hybrid Search**: Combines dense vector search (FAISS) for semantic understanding and sparse keyword search (BM25) for precise term matching using an `EnsembleRetriever`.
 -   **State-of-the-Art Retrieval**: Enhances retrieval with `MultiQueryRetriever` to overcome vocabulary mismatch and `ContextualCompressionRetriever` to filter for the most relevant results.
 -   **Conversational Memory**: Maintains session-specific chat history, allowing for contextual follow-up questions.
@@ -35,6 +35,11 @@ The system features an advanced retrieval pipeline that combines semantic and ke
 
 3.  **Install Dependencies**
     A `requirements.txt` file would be ideal. Based on the imports, install the following:
+    ```bash
+    pip install -r requirements.txt
+    ```
+    or
+    
     ```bash
     pip install "fastapi[all]" langchain langchain-google-genai google-generativeai pypdf2 faiss-cpu rank_bm25 nltk python-dotenv langchain-experimental
     ```
@@ -98,7 +103,7 @@ Let's assume we uploaded a PDF biography of Sheikh Mujibur Rahman.
 ```json
 {
   "query": "Who was the first president of Bangladesh?",
-  "session_id": "your-session-id-from-upload"
+  "session_id": "2055ff91-f47a-492c-a73d-0a254ddb8ef3"
 }
 ```
 
@@ -114,13 +119,52 @@ Let's assume we uploaded a PDF biography of Sheikh Mujibur Rahman.
 }
 ```
 
+**Outside of Document Request:** `POST /query`
+```json
+{
+  "query": "Who won the 2024 Super Bowl?",
+  "session_id": "1155ff91-f47a-492c-a73d-0a254ddb8e90"
+}
+```
+**Response:**
+```json
+{
+  "answer": "Kansas City Chiefs",
+  "source": "Web Search",
+  "source_documents": [
+    "The Kansas City Chiefs defeated the San Francisco 49ers 25-22 in overtime in Super Bowl LVIII on Sunday in Las Vegas. Patrick Mahomes was named the MVP..."
+    "..."
+  ]
+}
+```
+
 #### 2. Bengali Query (Document Source)
 
 **Request:** `POST /query`
 ```json
 {
+  "query": "বিয়ের সময় কল্যাণীর প্রকৃত বয়স কত ছিল?",
+  "session_id": "2055ff91-f47a-492c-a73d-0a254ddb8yuqq"
+}
+```
+
+**Response:**
+```json
+{
+  "answer": "১৫ বছর",
+  "source": "Document (Hybrid Search)",
+  "source_documents": [
+    "১৯৭১ সালের এপ্রিল মাসে স্বাধীনতার ঘোষণার পর শেখ মুজিবুর রহমানকে বাংলাদেশের প্রথম রাষ্ট্রপতি হিসেবে নামকরণ করা হয়...",
+    "..."
+  ]
+}
+```
+
+**Outside of Document Request:** `POST /query`
+```json
+{
   "query": "বাংলাদেশের প্রথম রাষ্ট্রপতি কে ছিলেন?",
-  "session_id": "your-session-id-from-upload"
+  "session_id": "9055ff91-f47a-492c-a73d-0a254ddb8ef3"
 }
 ```
 
@@ -128,7 +172,7 @@ Let's assume we uploaded a PDF biography of Sheikh Mujibur Rahman.
 ```json
 {
   "answer": "শেখ মুজিবুর রহমান",
-  "source": "Document (Hybrid Search)",
+  "source": "Web Search",
   "source_documents": [
     "১৯৭১ সালের এপ্রিল মাসে স্বাধীনতার ঘোষণার পর শেখ মুজিবুর রহমানকে বাংলাদেশের প্রথম রাষ্ট্রপতি হিসেবে নামকরণ করা হয়...",
     "..."
@@ -144,7 +188,7 @@ This query is unrelated to the PDF content, triggering the fallback.
 ```json
 {
   "query": "What is the current price of gold?",
-  "session_id": "your-session-id-from-upload"
+  "session_id": "2055ff91-f47a-492c-a73d-0a254ddb8eg5"
 }
 ```
 **Response:**
@@ -208,11 +252,11 @@ Formal, automated evaluation is not yet implemented in this codebase but is a cr
 
 **Future Implementation**: Frameworks like **Ragas** or **LangChain's evaluation tools** could be integrated to create a test set of question-answer pairs and automatically score the system's performance on these metrics.
 
-## Must Answer Following Questions
+## Answer Following Questions
 
 #### 1. What method or library did you use to extract the text, and why? Did you face any formatting challenges with the PDF content?
 
--   **Method**: The application uses a highly advanced method for text extraction. Instead of a traditional library like `PyPDF2` or `pdfplumber` for raw text dumps, it leverages the **Google Gemini Pro model (`gemini-2.0-flash`) via its File API**. The PDF is split into smaller chunks (3 pages each), and each chunk is uploaded and processed by Gemini.
+-   **Method**: The application uses a highly advanced method for text extraction. Instead of a traditional library like `PyPDF2` or `pdfplumber` for raw text dumps, it leverages the **Google Gemini model (`gemini-2.0-flash`) via its File API**. The PDF is split into smaller chunks (3 pages each), and each chunk is uploaded and processed by Gemini.
 -   **Why this Method was Chosen**: This approach was chosen because it performs **intelligent content extraction**, not just text scraping. The prompt given to Gemini instructs it to:
     -   Preserve the original document structure (headings, lists, paragraphs).
     -   Convert tables into Markdown format.
